@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { KanbanBoardData, KanbanColumnId, Task } from '../types';
 import { PlusIcon, TrashIcon } from './common/Icons';
@@ -45,8 +44,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialData, onUpdate }) => {
   };
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 h-full">
-      <h3 className="text-lg font-bold mb-4 px-1 text-gray-200">Structuring & Planning</h3>
+    <div className="h-full">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {(Object.keys(columnTitles) as KanbanColumnId[]).map(columnId => (
           <div key={columnId} className="bg-gray-950/50 rounded-lg p-3">

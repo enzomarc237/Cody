@@ -1,10 +1,9 @@
-
 import React from 'react';
-import { BrainCircuitIcon, ClipboardListIcon, LightbulbIcon } from './common/Icons';
+import { BrainCircuitIcon, ClipboardListIcon, LightbulbIcon, TrendingUpIcon } from './common/Icons';
 import Spinner from './common/Spinner';
 
 interface AIToolsPanelProps {
-  onRunTool: (tool: 'swot' | 'roadmap' | 'expand') => void;
+  onRunTool: (tool: 'swot' | 'roadmap' | 'expand' | 'market') => void;
   isLoading: boolean;
 }
 
@@ -54,6 +53,13 @@ const AIToolsPanel: React.FC<AIToolsPanelProps> = ({ onRunTool, isLoading }) => 
           icon={<LightbulbIcon className="h-6 w-6 text-yellow-400" />}
           label="Expand Idea"
           description="Find new angles & variations."
+        />
+        <AIToolButton
+          onClick={() => onRunTool('market')}
+          isLoading={isLoading}
+          icon={<TrendingUpIcon className="h-6 w-6 text-teal-400" />}
+          label="Market Analysis"
+          description="Analyze trends & competitors."
         />
       </div>
     </div>

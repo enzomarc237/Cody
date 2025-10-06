@@ -1,12 +1,11 @@
-
 import React, { useState } from 'react';
-import { Project, ChatMessage, KanbanBoardData, SWOTAnalysis, Roadmap } from '../types';
+import { Project, ChatMessage, KanbanBoardData, SWOTAnalysis, Roadmap, MarketAnalysisResult, AiToolType, GeneratedAsset } from '../types';
 import { ArrowLeftIcon } from './common/Icons';
 import ChatPanel from './ChatPanel';
 import AIToolsPanel from './AIToolsPanel';
-import KanbanBoard from './KanbanBoard';
 import Modal from './common/Modal';
-import { generateSWOT, generateRoadmap, expandIdea } from '../services/geminiService';
+import { generateSWOT, generateRoadmap, expandIdea, generateMarketAnalysis } from '../services/geminiService';
+import MainContentPanel from './MainContentPanel';
 
 interface ProjectViewProps {
   project: Project;
@@ -16,7 +15,7 @@ interface ProjectViewProps {
 
 const ProjectView: React.FC<ProjectViewProps> = ({ project, onUpdateProject, onGoToDashboard }) => {
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const [modalContent, setModalContent] = useState<React.ReactNode | null>(null);
+  const [assetToView, setAssetToView] = useState<GeneratedAsset | null>(null);
 
   const handleUpdateName = (e: React.ChangeEvent<HTMLInputElement>) => {
     onUpdateProject({ ...project, name: e.target.value });
@@ -33,29 +32,52 @@ const ProjectView: React.FC<ProjectViewProps> = ({ project, onUpdateProject, onG
   const handleUpdateKanban = (newKanbanData: KanbanBoardData) => {
     onUpdateProject({ ...project, kanbanTasks: newKanbanData });
   };
+  
+  const handleDeleteAsset = (assetId: string) => {
+    const updatedAssets = project.generatedAssets.filter(asset => asset.id !== assetId);
+    onUpdateProject({ ...project, generatedAssets: updatedAssets });
+  };
 
-  const runAiTool = async (tool: 'swot' | 'roadmap' | 'expand') => {
+  const runAiTool = async (tool: AiToolType) => {
     setIsAiLoading(true);
-    let resultNode: React.ReactNode = null;
+    let generatedAsset: GeneratedAsset | null = null;
     
     try {
+        let content: any = null;
+        let title = '';
+
         if (tool === 'swot') {
-            const result = await generateSWOT(project.description);
-            if (result) resultNode = <SWOTDisplay swot={result} />;
+            content = await generateSWOT(project.description);
+            title = 'SWOT Analysis';
         } else if (tool === 'roadmap') {
-            const result = await generateRoadmap(project.description);
-            if (result) resultNode = <RoadmapDisplay roadmap={result} />;
+            content = await generateRoadmap(project.description);
+            title = content?.title || 'Product Roadmap';
         } else if (tool === 'expand') {
-            const result = await expandIdea(project.description);
-            resultNode = <ExpandDisplay text={result} />;
+            content = await expandIdea(project.description);
+            title = 'Idea Expansion';
+        } else if (tool === 'market') {
+            content = await generateMarketAnalysis(project.description);
+            title = 'Market Analysis';
         }
+
+        if (content) {
+          generatedAsset = {
+            id: `asset-${Date.now()}`,
+            type: tool,
+            title,
+            content,
+            createdAt: new Date().toISOString(),
+          };
+          const updatedAssets = [...project.generatedAssets, generatedAsset];
+          onUpdateProject({ ...project, generatedAssets: updatedAssets });
+          setAssetToView(generatedAsset);
+        }
+
     } catch (error) {
-        resultNode = <p className="text-red-400">An error occurred while running the AI tool.</p>
+        console.error("Error running AI tool:", error);
+        alert('An error occurred while running the AI tool. Please try again.');
     } finally {
         setIsAiLoading(false);
-        if (resultNode) {
-            setModalContent(resultNode);
-        }
     }
   };
 
@@ -98,15 +120,35 @@ const ProjectView: React.FC<ProjectViewProps> = ({ project, onUpdateProject, onG
           />
         </div>
         <div className="lg:col-span-2">
-            <KanbanBoard initialData={project.kanbanTasks} onUpdate={handleUpdateKanban} />
+            <MainContentPanel
+              project={project}
+              onUpdateKanban={handleUpdateKanban}
+              onViewAsset={setAssetToView}
+              onDeleteAsset={handleDeleteAsset}
+            />
         </div>
       </div>
       
-      <Modal isOpen={!!modalContent} onClose={() => setModalContent(null)}>
-        {modalContent}
+      <Modal isOpen={!!assetToView} onClose={() => setAssetToView(null)}>
+        {assetToView && <AssetDisplay asset={assetToView} />}
       </Modal>
     </div>
   );
+};
+
+const AssetDisplay: React.FC<{ asset: GeneratedAsset }> = ({ asset }) => {
+    switch (asset.type) {
+        case 'swot':
+            return <SWOTDisplay swot={asset.content as SWOTAnalysis} />;
+        case 'roadmap':
+            return <RoadmapDisplay roadmap={asset.content as Roadmap} />;
+        case 'expand':
+            return <ExpandDisplay text={asset.content as string} />;
+        case 'market':
+            return <MarketAnalysisDisplay result={asset.content as MarketAnalysisResult} />;
+        default:
+            return <p>Unsupported asset type.</p>
+    }
 };
 
 const SWOTDisplay: React.FC<{ swot: SWOTAnalysis }> = ({ swot }) => (
@@ -153,6 +195,33 @@ const ExpandDisplay: React.FC<{ text: string }> = ({ text }) => (
     <div>
         <h3 className="text-xl font-bold mb-4 text-gray-100">Idea Expansion</h3>
         <div className="prose prose-invert prose-sm text-gray-300 whitespace-pre-wrap">{text}</div>
+    </div>
+);
+
+const MarketAnalysisDisplay: React.FC<{ result: MarketAnalysisResult }> = ({ result }) => (
+    <div>
+        <h3 className="text-xl font-bold mb-4 text-gray-100">Market Analysis</h3>
+        <div className="prose prose-invert prose-sm text-gray-300 whitespace-pre-wrap mb-6" dangerouslySetInnerHTML={{ __html: result.analysisText.replace(/\n/g, '<br />') }}/>
+        
+        {result.sources.length > 0 && (
+            <div>
+                <h4 className="font-semibold text-gray-200 mb-2">Sources</h4>
+                <ul className="list-disc list-inside text-sm space-y-2">
+                    {result.sources.map((source, i) => (
+                        <li key={i}>
+                            <a 
+                                href={source.uri} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-indigo-400 hover:text-indigo-300 hover:underline break-all"
+                            >
+                                {source.title || source.uri}
+                            </a>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+        )}
     </div>
 );
 

@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { Project } from './types';
 import Dashboard from './components/Dashboard';
@@ -23,6 +22,7 @@ const App: React.FC = () => {
           inProgress: [],
           done: [],
         },
+        generatedAssets: [],
       };
       setProjects([sampleProject]);
     }
@@ -43,6 +43,7 @@ const App: React.FC = () => {
       description: 'A new idea waiting to be explored.',
       chatHistory: [],
       kanbanTasks: { todo: [], inProgress: [], done: [] },
+      generatedAssets: [],
     };
     setProjects(prev => [...prev, newProject]);
     setSelectedProjectId(newProject.id);

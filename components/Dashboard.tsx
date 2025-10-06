@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Project } from '../types';
-import { PlusIcon, TrashIcon } from './common/Icons';
+import { PlusIcon, TrashIcon, DownloadIcon } from './common/Icons';
 
 interface DashboardProps {
   projects: Project[];
@@ -11,6 +10,24 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ projects, onSelectProject, onAddProject, onDeleteProject }) => {
+
+  const handleExportProject = (e: React.MouseEvent, project: Project) => {
+    e.stopPropagation();
+    
+    const sanitizeFilename = (name: string) => name.replace(/[\/\\?%*:|"<>]/g, '_').replace(/\s+/g, '_');
+    const filename = `${sanitizeFilename(project.name)}.json`;
+
+    const projectData = JSON.stringify(project, null, 2);
+    const blob = new Blob([projectData], { type: 'application/json;charset=utf-8' });
+    
+    if ((window as any).saveAs) {
+      (window as any).saveAs(blob, filename);
+    } else {
+      console.error('FileSaver.js not loaded');
+      alert('Could not export project. FileSaver library is missing.');
+    }
+  };
+
   return (
     <div className="animate-fade-in">
       <div className="flex justify-between items-center mb-6">
@@ -38,18 +55,27 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, onSelectProject, onAddP
             >
               <h3 className="text-lg font-bold text-gray-100 group-hover:text-indigo-400 transition-colors">{project.name}</h3>
               <p className="text-gray-400 mt-2 text-sm line-clamp-2">{project.description}</p>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (window.confirm(`Are you sure you want to delete "${project.name}"?`)) {
-                    onDeleteProject(project.id);
-                  }
-                }}
-                className="absolute top-4 right-4 text-gray-500 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                aria-label="Delete project"
-              >
-                <TrashIcon className="h-5 w-5" />
-              </button>
+              <div className="absolute top-4 right-4 flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={(e) => handleExportProject(e, project)}
+                  className="text-gray-500 hover:text-indigo-400 transition-colors"
+                  aria-label="Export project"
+                >
+                  <DownloadIcon className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm(`Are you sure you want to delete "${project.name}"?`)) {
+                      onDeleteProject(project.id);
+                    }
+                  }}
+                  className="text-gray-500 hover:text-red-500 transition-colors"
+                  aria-label="Delete project"
+                >
+                  <TrashIcon className="h-5 w-5" />
+                </button>
+              </div>
             </div>
           ))}
         </div>
