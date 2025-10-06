@@ -93,6 +93,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({ project, onUpdateProject, onB
           <div className="flex-grow min-h-0">
             <ChatPanel
               projectDescription={project.description}
+              generatedAssets={project.generatedAssets}
               chatHistory={project.chatHistory}
               onChatHistoryChange={handleChatHistoryChange}
               isAiLoading={isAiLoading}

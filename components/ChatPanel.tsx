@@ -1,7 +1,8 @@
 
+
 import React, { useState, useRef, useEffect } from 'react';
 // Fix: Added .ts extension
-import { ChatMessage } from '../types.ts';
+import { ChatMessage, GeneratedAsset } from '../types.ts';
 // Fix: Added .ts extension
 import { getChatResponse } from '../services/geminiService.ts';
 import Spinner from './common/Spinner.tsx';
@@ -10,13 +11,14 @@ import { SendIcon, BotIcon, UserIcon } from './common/Icons.tsx';
 
 interface ChatPanelProps {
   projectDescription: string;
+  generatedAssets: GeneratedAsset[];
   chatHistory: ChatMessage[];
   onChatHistoryChange: (newHistory: ChatMessage[]) => void;
   isAiLoading: boolean;
   setIsAiLoading: (isLoading: boolean) => void;
 }
 
-const ChatPanel: React.FC<ChatPanelProps> = ({ projectDescription, chatHistory, onChatHistoryChange, isAiLoading, setIsAiLoading }) => {
+const ChatPanel: React.FC<ChatPanelProps> = ({ projectDescription, generatedAssets, chatHistory, onChatHistoryChange, isAiLoading, setIsAiLoading }) => {
   const [userInput, setUserInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -37,14 +39,25 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ projectDescription, chatHistory, 
     setIsAiLoading(true);
 
     try {
-      // Fix: Correctly construct the prompt for the first message, including context,
-      // while passing the correct history to the Gemini service.
-      const promptForApi = chatHistory.length === 0
-        ? `Let's discuss my idea: "${projectDescription}".\n\nMy question: ${userInput}`
-        : userInput;
-      
-      // The history passed to the API should *not* include the new user message.
-      const aiResponse = await getChatResponse(chatHistory, promptForApi);
+      // Build context to send to the AI as a system instruction
+      let systemInstruction = `You are an AI assistant helping with a project.\n--- Project Context ---\n`;
+      systemInstruction += `Description: ${projectDescription}\n\n`;
+
+      if (generatedAssets && generatedAssets.length > 0) {
+        systemInstruction += "Generated Documents:\n";
+        generatedAssets.forEach(asset => {
+          systemInstruction += `\n[Document: ${asset.name}]\n`;
+          systemInstruction += `${asset.content}\n`;
+        });
+        systemInstruction += "\n";
+      }
+      systemInstruction += `--- End Context ---\n\nYou should use the provided context to inform your answers.`;
+
+      const aiResponse = await getChatResponse(
+        chatHistory,
+        userInput,
+        systemInstruction
+      );
       const newAiMessage: ChatMessage = { role: 'model', text: aiResponse };
       onChatHistoryChange([...updatedHistoryForUi, newAiMessage]);
     } catch (error) {

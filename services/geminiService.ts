@@ -14,11 +14,16 @@ const buildHistory = (history: ChatMessage[]) => {
   }));
 };
 
-export const getChatResponse = async (history: ChatMessage[], newPrompt: string): Promise<string> => {
+export const getChatResponse = async (
+  history: ChatMessage[],
+  newPrompt: string,
+  systemInstruction?: string,
+): Promise<string> => {
   try {
     const chat: Chat = ai.chats.create({
       model,
-      history: buildHistory(history)
+      history: buildHistory(history),
+      config: systemInstruction ? { systemInstruction } : undefined,
     });
     const response: GenerateContentResponse = await chat.sendMessage({ message: newPrompt });
     return response.text;
