@@ -1,10 +1,11 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 type SetValue<T> = (value: T | ((val: T) => T)) => void;
 
 export function useLocalStorage<T,>(key: string, initialValue: T): [T, SetValue<T>] {
-  const readValue = (): T => {
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    // Use lazy initializer for useState to read from localStorage only once.
     if (typeof window === 'undefined') {
       return initialValue;
     }
@@ -15,14 +16,15 @@ export function useLocalStorage<T,>(key: string, initialValue: T): [T, SetValue<
       console.warn(`Error reading localStorage key “${key}”:`, error);
       return initialValue;
     }
-  };
-
-  const [storedValue, setStoredValue] = useState<T>(readValue);
+  });
 
   const setValue: SetValue<T> = (value) => {
     try {
+      // Allow value to be a function so we have the same API as useState
       const valueToStore = value instanceof Function ? value(storedValue) : value;
+      // Save state
       setStoredValue(valueToStore);
+      // Save to local storage
       if (typeof window !== 'undefined') {
         window.localStorage.setItem(key, JSON.stringify(valueToStore));
       }
@@ -30,11 +32,6 @@ export function useLocalStorage<T,>(key: string, initialValue: T): [T, SetValue<
       console.warn(`Error setting localStorage key “${key}”:`, error);
     }
   };
-
-  useEffect(() => {
-    setStoredValue(readValue());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   return [storedValue, setValue];
 }
