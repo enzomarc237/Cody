@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
-import { Project, KanbanBoardData, GeneratedAsset } from '../types';
-import KanbanBoard from './KanbanBoard';
-import GeneratedAssetsPanel from './GeneratedAssetsPanel';
-import { ClipboardListIcon, FileTextIcon } from './common/Icons';
+// Fix: Added .ts extension
+import { Project, KanbanBoardData, GeneratedAsset } from '../types.ts';
+// Fix: Added .tsx extension
+import KanbanBoard from './KanbanBoard.tsx';
+// Fix: Added .tsx extension
+import GeneratedAssetsPanel from './GeneratedAssetsPanel.tsx';
+// Fix: Added .tsx extension
+import { ClipboardListIcon, FileTextIcon } from './common/Icons.tsx';
 
 interface MainContentPanelProps {
   project: Project;
@@ -37,7 +41,7 @@ const MainContentPanel: React.FC<MainContentPanelProps> = ({
           onClick={() => setActiveTab('documents')}
         />
       </div>
-      <div className="p-4 flex-grow">
+      <div className="p-4 flex-grow overflow-y-auto">
         {activeTab === 'planning' && (
             <KanbanBoard initialData={project.kanbanTasks} onUpdate={onUpdateKanban} />
         )}

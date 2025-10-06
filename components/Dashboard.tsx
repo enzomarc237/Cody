@@ -1,6 +1,8 @@
 import React from 'react';
-import { Project } from '../types';
-import { PlusIcon, TrashIcon, DownloadIcon } from './common/Icons';
+// Fix: Added .ts extension
+import { Project } from '../types.ts';
+// Fix: Added .tsx extension
+import { PlusIcon, TrashIcon, DownloadIcon } from './common/Icons.tsx';
 
 interface DashboardProps {
   projects: Project[];
@@ -23,8 +25,14 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, onSelectProject, onAddP
     if ((window as any).saveAs) {
       (window as any).saveAs(blob, filename);
     } else {
-      console.error('FileSaver.js not loaded');
-      alert('Could not export project. FileSaver library is missing.');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     }
   };
 

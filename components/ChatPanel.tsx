@@ -1,9 +1,12 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChatMessage } from '../types';
-import { getChatResponse } from '../services/geminiService';
-import Spinner from './common/Spinner';
-import { SendIcon, BotIcon, UserIcon } from './common/Icons';
+// Fix: Added .ts extension
+import { ChatMessage } from '../types.ts';
+// Fix: Added .ts extension
+import { getChatResponse } from '../services/geminiService.ts';
+import Spinner from './common/Spinner.tsx';
+// Fix: Added .tsx extension
+import { SendIcon, BotIcon, UserIcon } from './common/Icons.tsx';
 
 interface ChatPanelProps {
   projectDescription: string;
@@ -28,31 +31,33 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ projectDescription, chatHistory, 
     if (!userInput.trim() || isAiLoading) return;
 
     const newUserMessage: ChatMessage = { role: 'user', text: userInput };
-    const updatedHistory = [...chatHistory, newUserMessage];
-    onChatHistoryChange(updatedHistory);
+    const updatedHistoryForUi = [...chatHistory, newUserMessage];
+    onChatHistoryChange(updatedHistoryForUi);
     setUserInput('');
     setIsAiLoading(true);
 
     try {
-      // Add project description as context for the first message if history is empty
-      const historyForApi = chatHistory.length === 0 
-        ? [{ role: 'user' as const, text: `Let's discuss my idea: "${projectDescription}".\n\nMy question: ${userInput}`}]
-        : updatedHistory;
-
-      const aiResponse = await getChatResponse(historyForApi.slice(0, -1), userInput);
+      // Fix: Correctly construct the prompt for the first message, including context,
+      // while passing the correct history to the Gemini service.
+      const promptForApi = chatHistory.length === 0
+        ? `Let's discuss my idea: "${projectDescription}".\n\nMy question: ${userInput}`
+        : userInput;
+      
+      // The history passed to the API should *not* include the new user message.
+      const aiResponse = await getChatResponse(chatHistory, promptForApi);
       const newAiMessage: ChatMessage = { role: 'model', text: aiResponse };
-      onChatHistoryChange([...updatedHistory, newAiMessage]);
+      onChatHistoryChange([...updatedHistoryForUi, newAiMessage]);
     } catch (error) {
       console.error("Failed to get AI response:", error);
       const errorMessage: ChatMessage = { role: 'model', text: "Sorry, I couldn't get a response. Please try again." };
-      onChatHistoryChange([...updatedHistory, errorMessage]);
+      onChatHistoryChange([...updatedHistoryForUi, errorMessage]);
     } finally {
       setIsAiLoading(false);
     }
   };
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl flex flex-col h-[500px]">
+    <div className="bg-gray-900 border border-gray-800 rounded-xl flex flex-col h-full">
       <h3 className="text-lg font-bold p-4 border-b border-gray-800 text-gray-200">AI Ideation Agent</h3>
       <div className="flex-grow p-4 overflow-y-auto space-y-4">
         {chatHistory.map((message, index) => (
