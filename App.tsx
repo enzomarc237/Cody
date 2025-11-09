@@ -1,69 +1,35 @@
-import React, { useState } from 'react';
-import { useLocalStorage } from './hooks/useLocalStorage.ts';
-import { Project } from './types.ts';
-import Dashboard from './components/Dashboard.tsx';
-import ProjectView from './components/ProjectView.tsx';
+import React from 'react';
+import { useNotes } from './hooks/useNotes.ts';
+import NoteList from './components/NoteList.tsx';
+import NewNoteInput from './components/NewNoteInput.tsx';
 
 const App: React.FC = () => {
-  const [projects, setProjects] = useLocalStorage<Project[]>('projects', []);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-
-  const handleAddProject = () => {
-    const name = prompt("Enter new project name:");
-    if (name) {
-      const description = prompt("Enter a short description for your project:");
-      if (description) {
-        const newProject: Project = {
-          id: `proj-${Date.now()}`,
-          name,
-          description,
-          chatHistory: [],
-          kanbanTasks: { tasks: {}, columns: {}, columnOrder: [] },
-          generatedAssets: [],
-        };
-        setProjects([...projects, newProject]);
-        setSelectedProjectId(newProject.id);
-      }
-    }
-  };
-
-  const handleDeleteProject = (id: string) => {
-    setProjects(projects.filter(p => p.id !== id));
-    if (selectedProjectId === id) {
-        setSelectedProjectId(null);
-    }
-  };
-  
-  const handleUpdateProject = (updatedProject: Project) => {
-    setProjects(projects.map(p => p.id === updatedProject.id ? updatedProject : p));
-  };
-
-  const selectedProject = projects.find(p => p.id === selectedProjectId);
+  const { notes, addNote, deleteNote } = useNotes();
 
   return (
-    <div className="bg-gray-950 text-gray-200 min-h-screen font-sans">
-      <header className="p-4 border-b border-gray-800 flex items-center gap-2">
-        <svg className="h-8 w-8 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM18 13.5a3.375 3.375 0 00-3.375-3.375L13.5 9.75l-1.125.375a3.375 3.375 0 00-2.456 2.456L9.75 13.5l.375 1.125a3.375 3.375 0 002.456 2.456L13.5 18l1.125-.375a3.375 3.375 0 002.456-2.456L17.25 13.5l-.375-1.125z" />
-        </svg>
-        <h1 className="text-xl font-bold">AI Project Launchpad</h1>
-      </header>
-      <main className="p-4 sm:p-6 lg:p-8">
-        {selectedProject ? (
-          <ProjectView 
-            project={selectedProject}
-            onUpdateProject={handleUpdateProject}
-            onBackToDashboard={() => setSelectedProjectId(null)}
-          />
-        ) : (
-          <Dashboard
-            projects={projects}
-            onSelectProject={setSelectedProjectId}
-            onAddProject={handleAddProject}
-            onDeleteProject={handleDeleteProject}
-          />
-        )}
-      </main>
+    <div className="bg-[#2d3748] min-h-screen flex items-center justify-center font-sans">
+      <div className="w-full max-w-sm mx-auto">
+        <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+          <header className="bg-gray-100 p-3 flex justify-between items-center border-b border-gray-200">
+            <div className="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V8.414a1 1 0 00-.293-.707l-4-4A1 1 0 0011.586 3H4zm5 6a1 1 0 10-2 0v2a1 1 0 102 0V8z" clipRule="evenodd" />
+              </svg>
+              <h1 className="text-md font-semibold text-gray-700">Quick Notes</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
+              <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
+            </div>
+          </header>
+          <div className="p-4">
+            <NoteList notes={notes} deleteNote={deleteNote} />
+          </div>
+          <footer className="p-4 bg-gray-50 border-t border-gray-200">
+            <NewNoteInput onAddNote={addNote} />
+          </footer>
+        </div>
+      </div>
     </div>
   );
 };
